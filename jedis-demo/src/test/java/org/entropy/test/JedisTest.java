@@ -1,5 +1,6 @@
 package org.entropy.test;
 
+import org.entropy.jedis.utils.JedisConnectionFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,8 @@ public class JedisTest {
 
     @BeforeEach
     void setup() {
-        jedis = new Jedis("127.0.0.1", 6379);
+        // jedis = new Jedis("127.0.0.1", 6379);
+        jedis = JedisConnectionFactory.getJedis();
         jedis.auth("123");
         jedis.select(0);
     }
