@@ -10,6 +10,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>jedis-demo</module>
+        <module>spring-data-redis-demo</module>
     </modules>
 
     <properties>

@@ -10,6 +10,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 class SpringDataRedisDemoApplicationTests {
 
     @Autowired
+    @Qualifier("stringRedis")
     private RedisTemplate<String, Object> redisTemplate;
 
     @Test
