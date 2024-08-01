@@ -10,6 +10,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
+import java.util.Map;
+
 @SpringBootTest
 class SpringDataRedisDemoApplicationTests {
 
@@ -46,4 +48,13 @@ class SpringDataRedisDemoApplicationTests {
         System.out.println("user= " + value);
     }
 
+    @Test
+    void testHash() {
+        stringRedisTemplate.opsForHash().put("user:300", "name", "spark");
+        stringRedisTemplate.opsForHash().put("user:300", "age", "18");
+
+        Map<Object, Object> entries = stringRedisTemplate.opsForHash().entries("user:300");
+        System.out.println("entries = " + entries);
+    }
+    
 }
