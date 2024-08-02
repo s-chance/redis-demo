@@ -5,12 +5,10 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpSession;
+import org.entropy.smslogin.dto.LoginFormDTO;
 import org.entropy.smslogin.pojo.Result;
 import org.entropy.smslogin.service.UserService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/user")
@@ -27,5 +25,14 @@ public class UserController {
     @PostMapping("/code")
     public Result<?> code(@RequestParam("phone") String phone, HttpSession session) {
         return userService.sendCode(phone, session);
+    }
+
+    /**
+     * 登录
+     */
+    @Operation(summary = "登录",description = "通过验证码登录")
+    @PostMapping("/login")
+    public Result<?> login(@RequestBody LoginFormDTO loginFormDTO, HttpSession session) {
+        return userService.login(loginFormDTO, session);
     }
 }
