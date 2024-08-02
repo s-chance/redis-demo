@@ -17,7 +17,7 @@ public class UserService {
         // 3.符合，生成验证码
         String code = RandomUtil.randomNumbers(6);
         // 4.保存验证码到session
-        session.setAttribute(phone, code);
+        session.setAttribute("code", code);
         // 5.发送验证码
         log.debug("发送短信验证码：{}", code);
         return Result.success(null);
