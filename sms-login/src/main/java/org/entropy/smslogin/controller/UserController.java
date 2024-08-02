@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpSession;
 import org.entropy.smslogin.dto.LoginFormDTO;
 import org.entropy.smslogin.pojo.Result;
 import org.entropy.smslogin.service.UserService;
+import org.entropy.smslogin.utils.UserHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -30,9 +31,16 @@ public class UserController {
     /**
      * 登录
      */
-    @Operation(summary = "登录",description = "通过验证码登录")
+    @Operation(summary = "登录", description = "通过验证码登录")
     @PostMapping("/login")
     public Result<?> login(@RequestBody LoginFormDTO loginFormDTO, HttpSession session) {
         return userService.login(loginFormDTO, session);
+    }
+
+    @Operation(summary = "关于我", description = "登录后查看个人信息")
+    @GetMapping("/me")
+    public Result<String> me() {
+        String user = UserHolder.getUser();
+        return Result.success(user);
     }
 }
