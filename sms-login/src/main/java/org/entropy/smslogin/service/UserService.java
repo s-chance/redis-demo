@@ -23,8 +23,10 @@ public class UserService {
         // 3.符合，生成验证码
         String code = RandomUtil.randomNumbers(6);
         // 4.保存原始手机号和验证码到session
-        session.setAttribute("originalPhone", phone);
-        session.setAttribute("code", code);
+//        session.setAttribute("originalPhone", phone);
+//        session.setAttribute("code", code);
+        // 优化：直接将原始手机号作为 key，验证码作为 value 存储
+        session.setAttribute(phone, code);
         // 5.发送验证码
         log.debug("发送短信验证码：{}", code);
         return Result.success(null);
@@ -38,13 +40,14 @@ public class UserService {
             return Result.failure("手机号不正确");
         }
         // 防止验证码重用攻击，校验手机号是否为接收验证码的手机号
-        String originalPhone = (String) session.getAttribute("originalPhone");
-        if (!Objects.equals(originalPhone, phone)) {
-            return Result.failure("该手机号与接收验证码的手机号不一致，请确认接收验证码的手机号");
-        }
+        // 优化：根据手机号从 session 中获取验证码，可以不需要这里的校验步骤
+//        String originalPhone = (String) session.getAttribute("originalPhone");
+//        if (!Objects.equals(originalPhone, phone)) {
+//            return Result.failure("该手机号与接收验证码的手机号不一致，请确认接收验证码的手机号");
+//        }
 
         // 2.校验验证码
-        String cacheCode = (String) session.getAttribute("code");
+        String cacheCode = (String) session.getAttribute(phone);
         String code = loginFormDTO.getCode();
         if (cacheCode == null || !cacheCode.equals(code)) {
             // 3.不一致
