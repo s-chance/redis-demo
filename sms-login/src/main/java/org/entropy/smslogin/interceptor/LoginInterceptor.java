@@ -1,32 +1,63 @@
 package org.entropy.smslogin.interceptor;
 
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.StrUtil;
+import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import org.entropy.smslogin.pojo.User;
 import org.entropy.smslogin.utils.UserHolder;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static org.entropy.smslogin.constant.RedisConstants.LOGIN_USER_KEY_PREFIX;
+import static org.entropy.smslogin.constant.RedisConstants.LOGIN_USER_TTL;
+
+@Component
 public class LoginInterceptor implements HandlerInterceptor {
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        // 1.获取session
-        HttpSession session = request.getSession();
+        // 1.获取请求头中的token
+        String token = request.getHeader("Authorization");
+        if (StrUtil.isBlank(token)) {
+            // 不存在，拦截
+            response.setStatus(401);
+            return false;
+        }
 
-        // 2.获取session中的用户
-        Object loginUser = session.getAttribute("loginUser");
+        // 2.根据token获取redis中的用户
+        String tokenKey = LOGIN_USER_KEY_PREFIX + token;
+        Map<Object, Object> userMap = stringRedisTemplate.opsForHash().entries(tokenKey);
 
         // 3.判断用户是否存在
-        if (loginUser == null) {
+        if (userMap.isEmpty()) {
             // 4.不存在，拦截
             response.setStatus(401);
             return false;
         }
 
-        // 5.存在，保存用户信息到ThreadLocal
-        UserHolder.saveUser((String) loginUser);
+        // 5.将查询到的Hash数据转为对象
+        User user = BeanUtil.fillBeanWithMap(userMap, new User(), false);
 
-        // 6.放行
+        // 6.保存用户信息到ThreadLocal
+        User userHolder = UserHolder.getUser();
+        if (userHolder == null || !userHolder.equals(user)) {
+            UserHolder.saveUser(user);
+        }
+
+        // 7.刷新 token 缓存
+        stringRedisTemplate.expire(tokenKey, LOGIN_USER_TTL, TimeUnit.MINUTES);
+
+        // 8.放行
         return true;
     }
 

@@ -1,20 +1,35 @@
 package org.entropy.smslogin.service;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
+import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.RandomUtil;
-import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.entropy.smslogin.db.UserDB;
 import org.entropy.smslogin.dto.LoginFormDTO;
 import org.entropy.smslogin.pojo.Result;
+import org.entropy.smslogin.pojo.User;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
 
-import java.util.Objects;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static org.entropy.smslogin.constant.RedisConstants.*;
 
 @Slf4j
+@Service
+@RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class UserService {
 
     private final UserDB userDB = new UserDB();
 
-    public Result<?> sendCode(String phone, HttpSession session) {
+    private final StringRedisTemplate stringRedisTemplate;
+
+    public Result<?> sendCode(String phone) {
         // 1.校验手机号
         if (phone.length() != 11) {
             // 2.不符合，返回错误信息
@@ -22,46 +37,59 @@ public class UserService {
         }
         // 3.符合，生成验证码
         String code = RandomUtil.randomNumbers(6);
-        // 4.保存原始手机号和验证码到session
-//        session.setAttribute("originalPhone", phone);
-//        session.setAttribute("code", code);
-        // 优化：直接将原始手机号作为 key，验证码作为 value 存储
-        session.setAttribute(phone, code);
+        // 4.保存验证码到redis
+        stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY_PREFIX + phone, code, LOGIN_CODE_TTL, TimeUnit.MINUTES);
         // 5.发送验证码
         log.debug("发送短信验证码：{}", code);
         return Result.success(null);
     }
 
-    public Result<?> login(LoginFormDTO loginFormDTO, HttpSession session) {
+    public Result<?> login(LoginFormDTO loginFormDTO) {
         // 1.校验手机号
         String phone = loginFormDTO.getPhone();
         if (phone.length() != 11) {
-            // 不符合，返回错误信息
+            // 2.不符合，返回错误信息
             return Result.failure("手机号不正确");
         }
-        // 防止验证码重用攻击，校验手机号是否为接收验证码的手机号
-        // 优化：根据手机号从 session 中获取验证码，可以不需要这里的校验步骤
-//        String originalPhone = (String) session.getAttribute("originalPhone");
-//        if (!Objects.equals(originalPhone, phone)) {
-//            return Result.failure("该手机号与接收验证码的手机号不一致，请确认接收验证码的手机号");
-//        }
 
-        // 2.校验验证码
-        String cacheCode = (String) session.getAttribute(phone);
+        // 3.从redis获取验证码校验
+        String cacheCode = stringRedisTemplate.opsForValue().get(LOGIN_CODE_KEY_PREFIX + phone);
         String code = loginFormDTO.getCode();
         if (cacheCode == null || !cacheCode.equals(code)) {
-            // 3.不一致
+            // 不一致
             return Result.failure("验证码不一致");
         }
+        // 验证通过后立即删除验证码，避免重复登录
+        stringRedisTemplate.delete(LOGIN_CODE_KEY_PREFIX + phone);
+
         // 4.一致，根据手机号查询用户
-        String userByPhone = userDB.getUserByPhone(phone);
+        User userByPhone = userDB.getUserByPhone(phone);
         // 5.判断用户是否存在
         if (userByPhone == null) {
             // 6.不存在，创建新用户并保存
             userByPhone = userDB.saveUser(phone);
         }
-        // 7.保存用户信息到session中
-        session.setAttribute("loginUser", userByPhone);
-        return Result.success(null);
+
+        // 7.保存用户信息到redis中
+        // 7.1.随机生成token，作为登录令牌
+        String token = UUID.randomUUID().toString(true);
+
+        // 7.2.将User对象转为HashMap存储
+        Map<String, Object> userMap = BeanUtil.beanToMap(userByPhone, new HashMap<>(),
+                CopyOptions.create()
+                        .setIgnoreNullValue(true)
+                        .setFieldValueEditor(
+                                (fieldName, fieldValue) -> fieldValue.toString()
+                        ));
+
+        // 7.3.存储
+        String tokenKey = LOGIN_USER_KEY_PREFIX + token;
+        stringRedisTemplate.opsForHash().putAll(tokenKey, userMap);
+
+        // 7.4.设置token有效期
+        stringRedisTemplate.expire(tokenKey, LOGIN_USER_TTL, TimeUnit.MINUTES);
+
+        // 8.返回token
+        return Result.success(token);
     }
 }

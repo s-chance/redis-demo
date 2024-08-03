@@ -1,13 +1,15 @@
 package org.entropy.smslogin.utils;
 
-public class UserHolder {
-    private static final ThreadLocal<String> tl = new ThreadLocal<>();
+import org.entropy.smslogin.pojo.User;
 
-    public static void saveUser(String name) {
-        tl.set(name);
+public class UserHolder {
+    private static final ThreadLocal<User> tl = new ThreadLocal<>();
+
+    public static void saveUser(User user) {
+        tl.set(user);
     }
 
-    public static String getUser() {
+    public static User getUser() {
         return tl.get();
     }
 
