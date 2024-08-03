@@ -46,4 +46,10 @@ public class UserController {
         User user = UserHolder.getUser();
         return Result.success(user);
     }
+
+    @Operation(summary = "测试", description = "测试刷新 token")
+    @GetMapping("/refresh")
+    public void refresh() {
+
+    }
 }
