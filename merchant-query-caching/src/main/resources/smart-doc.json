@@ -1,0 +1,6 @@
+{
+  "outPath": "./src/main/resources/doc",
+  "serverUrl": "http://localhost:8080",
+  "allInOne": true,
+  "createDebugPage": true
+}
