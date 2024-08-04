@@ -25,5 +25,12 @@ public class ShopController {
         return shopService.queryById(id);
     }
 
-
+    /**
+     * 查询所有商户类型
+     * @return 商户类型列表
+     */
+    @GetMapping("/type")
+    public Result<?> queryShopType() {
+        return shopService.queryType();
+    }
 }

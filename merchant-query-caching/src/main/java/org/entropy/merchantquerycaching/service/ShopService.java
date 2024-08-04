@@ -5,14 +5,19 @@ import cn.hutool.json.JSONUtil;
 import jakarta.annotation.Resource;
 import org.entropy.merchantquerycaching.pojo.Result;
 import org.entropy.merchantquerycaching.pojo.Shop;
+import org.entropy.merchantquerycaching.pojo.ShopType;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.entropy.merchantquerycaching.constant.RedisConstants.CACHE_SHOP_KEY_PREFIX;
+import static org.entropy.merchantquerycaching.constant.RedisConstants.CACHE_SHOP_TYPE_KEY;
 
 @Service
 public class ShopService {
@@ -20,6 +25,12 @@ public class ShopService {
     private final Map<Long, Shop> shopDB = new HashMap<>() {{
         put(1L, new Shop("1121233", "fruit"));
         put(2L, new Shop("7799898", "vegetable"));
+    }};
+
+    private final List<ShopType> shopTypeDB = new ArrayList<>() {{
+        add(new ShopType(1L, "food", "食品"));
+        add(new ShopType(2L, "drink", "饮料"));
+        add(new ShopType(3L, "game", "游戏"));
     }};
 
     @Resource
@@ -52,5 +63,34 @@ public class ShopService {
 
         // 7.返回
         return Result.success("返回成功", shop);
+    }
+
+    public Result<?> queryType() {
+        List<String> typeList = stringRedisTemplate.opsForList().range(CACHE_SHOP_TYPE_KEY, 0, -1);
+        if (typeList != null && !typeList.isEmpty()) {
+            List<ShopType> shopTypes = typeList.stream()
+                    .map(type -> JSONUtil.toBean(type, ShopType.class))
+                    .collect(Collectors.toList());
+            return Result.success("操作成功", shopTypes);
+        }
+
+        // 模拟数据库查询耗时
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (shopTypeDB.isEmpty()) {
+            return Result.failure("没有数据");
+        }
+
+        List<String> shopTypeList = shopTypeDB.stream()
+                .map(JSONUtil::toJsonStr)
+                .collect(Collectors.toList());
+
+        stringRedisTemplate.opsForList().rightPushAll(CACHE_SHOP_TYPE_KEY, shopTypeList);
+
+        return Result.success("返回成功", shopTypeDB);
     }
 }
