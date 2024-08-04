@@ -8,6 +8,7 @@ import org.entropy.merchantquerycaching.pojo.Shop;
 import org.entropy.merchantquerycaching.pojo.ShopType;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,8 +17,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.entropy.merchantquerycaching.constant.RedisConstants.CACHE_SHOP_KEY_PREFIX;
-import static org.entropy.merchantquerycaching.constant.RedisConstants.CACHE_SHOP_TYPE_KEY;
+import static org.entropy.merchantquerycaching.constant.RedisConstants.*;
 
 @Service
 public class ShopService {
@@ -42,8 +42,10 @@ public class ShopService {
         String shopJson = stringRedisTemplate.opsForValue().get(key);
         // 2.判断是否存在
         if (StrUtil.isNotBlank(shopJson)) {
-            // 3.存在，反序列后返回
+            // 3.存在，反序列化后返回
             Shop shop = JSONUtil.toBean(shopJson, Shop.class);
+            // 刷新有效时间
+            stringRedisTemplate.expire(key, CACHE_SHOP_TTL, TimeUnit.MINUTES);
             return Result.success("操作成功", shop);
         }
         // 4.不存在，根据id查询数据库
@@ -59,7 +61,7 @@ public class ShopService {
             return Result.failure("商户不存在");
         }
         // 6.查询到了，序列化并写入redis
-        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(shop));
+        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(shop), CACHE_SHOP_TTL, TimeUnit.MINUTES);
 
         // 7.返回
         return Result.success("返回成功", shop);
@@ -92,5 +94,24 @@ public class ShopService {
         stringRedisTemplate.opsForList().rightPushAll(CACHE_SHOP_TYPE_KEY, shopTypeList);
 
         return Result.success("返回成功", shopTypeDB);
+    }
+
+    @Transactional
+    public Result<?> updateById(Long id, Shop shop) {
+        // 1.更新数据库
+        // 模拟数据库更新耗时
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        shopDB.put(id, shop);
+
+        // 2.删除缓存
+        stringRedisTemplate.delete(CACHE_SHOP_KEY_PREFIX + id);
+
+        // 如果是分布式系统，删除缓存的操作可能会用mq异步通知对应的服务去执行，并且需要使用分布式事务方案
+
+        return Result.success("操作成功", null);
     }
 }

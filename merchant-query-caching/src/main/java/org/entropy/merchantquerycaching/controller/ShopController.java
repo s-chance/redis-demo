@@ -2,11 +2,9 @@ package org.entropy.merchantquerycaching.controller;
 
 import jakarta.annotation.Resource;
 import org.entropy.merchantquerycaching.pojo.Result;
+import org.entropy.merchantquerycaching.pojo.Shop;
 import org.entropy.merchantquerycaching.service.ShopService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/shop")
@@ -23,6 +21,17 @@ public class ShopController {
     @GetMapping("/{id}")
     public Result<?> queryShopById(@PathVariable("id") Long id) {
         return shopService.queryById(id);
+    }
+
+    /**
+     * 根据id更新商铺信息
+     * @param id 商铺id
+     * @param shop 商铺数据
+     * @return 操作结果
+     */
+    @PutMapping("/{id}")
+    public Result<?> updateShop(@PathVariable("id") Long id, @RequestBody Shop shop) {
+        return shopService.updateById(id, shop);
     }
 
     /**
