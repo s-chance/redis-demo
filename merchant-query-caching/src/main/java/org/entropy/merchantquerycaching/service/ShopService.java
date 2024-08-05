@@ -48,6 +48,12 @@ public class ShopService {
             stringRedisTemplate.expire(key, CACHE_SHOP_TTL, TimeUnit.MINUTES);
             return Result.success("操作成功", shop);
         }
+        // 判断命中的是否是空值
+        if (shopJson != null && shopJson.isEmpty()) {
+            // 返回空值信息
+            return Result.failure("商户不存在");
+        }
+
         // 4.不存在，根据id查询数据库
         Shop shop = shopDB.get(id);
         // 模拟数据库查询耗时
@@ -56,8 +62,11 @@ public class ShopService {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        // 5.查询不到，返回提示信息
         if (shop == null) {
-            // 5.查询不到，返回
+            // 将空值写入redis
+            stringRedisTemplate.opsForValue().set(key, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
+            // 返回提示信息
             return Result.failure("商户不存在");
         }
         // 6.查询到了，序列化并写入redis
