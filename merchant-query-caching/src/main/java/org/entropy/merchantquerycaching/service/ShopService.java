@@ -1,8 +1,10 @@
 package org.entropy.merchantquerycaching.service;
 
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.entropy.merchantquerycaching.pojo.Result;
 import org.entropy.merchantquerycaching.pojo.Shop;
 import org.entropy.merchantquerycaching.pojo.ShopType;
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 
 import static org.entropy.merchantquerycaching.constant.RedisConstants.*;
 
+@Slf4j
 @Service
 public class ShopService {
 
@@ -54,26 +57,64 @@ public class ShopService {
             return Result.failure("商户不存在");
         }
 
-        // 4.不存在，根据id查询数据库
-        Shop shop = shopDB.get(id);
-        // 模拟数据库查询耗时
+        // 4.实现缓存重建
+        // 4.1.获取互斥锁
+        String lockKey = "lock:shop:" + id;
+        Shop shop = null;
         try {
-            TimeUnit.SECONDS.sleep(1);
+            boolean isLocked = lock(lockKey);
+            // 4.2.判断是否获取成功
+            if (!isLocked) {
+                // 4.3.失败，则休眠一段时间后再重试
+                TimeUnit.MILLISECONDS.sleep(50);
+                return queryById(id);
+            }
+
+            // 4.4.成功
+            // 双重检查锁，重新检查redis缓存
+            shopJson = stringRedisTemplate.opsForValue().get(key);
+            if (StrUtil.isNotBlank(shopJson)) {
+                // 已经存在缓存，无需重建
+                shop = JSONUtil.toBean(shopJson, Shop.class);
+                stringRedisTemplate.expire(key, CACHE_SHOP_TTL, TimeUnit.MINUTES);
+                return Result.success("操作成功", shop);
+            }
+
+            // 根据id查询数据库
+            shop = shopDB.get(id);
+            // 模拟数据库查询耗时
+            try {
+                TimeUnit.SECONDS.sleep(1);
+                log.info("数据库查询完成");
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            // 5.查询不到，返回提示信息
+            if (shop == null) {
+                // 将空值写入redis
+                stringRedisTemplate.opsForValue().set(key, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
+                // 返回提示信息
+                return Result.failure("商户不存在");
+            }
+            // 6.查询到了，序列化并写入redis
+            stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(shop), CACHE_SHOP_TTL, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        } finally {
+            // 7.释放互斥锁
+            unlock(lockKey);
         }
-        // 5.查询不到，返回提示信息
-        if (shop == null) {
-            // 将空值写入redis
-            stringRedisTemplate.opsForValue().set(key, "", CACHE_NULL_TTL, TimeUnit.MINUTES);
-            // 返回提示信息
-            return Result.failure("商户不存在");
-        }
-        // 6.查询到了，序列化并写入redis
-        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(shop), CACHE_SHOP_TTL, TimeUnit.MINUTES);
-
-        // 7.返回
+        // 8.返回
         return Result.success("返回成功", shop);
+    }
+
+    private boolean lock(String key) {
+        Boolean flag = stringRedisTemplate.opsForValue().setIfAbsent(key, "1", 10, TimeUnit.SECONDS);
+        return BooleanUtil.isTrue(flag);
+    }
+
+    private void unlock(String key) {
+        stringRedisTemplate.delete(key);
     }
 
     public Result<?> queryType() {
