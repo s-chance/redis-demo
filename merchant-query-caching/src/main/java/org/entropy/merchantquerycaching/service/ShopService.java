@@ -10,6 +10,7 @@ import org.entropy.merchantquerycaching.pojo.RedisData;
 import org.entropy.merchantquerycaching.pojo.Result;
 import org.entropy.merchantquerycaching.pojo.Shop;
 import org.entropy.merchantquerycaching.pojo.ShopType;
+import org.entropy.merchantquerycaching.utils.CacheClient;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,11 +45,28 @@ public class ShopService {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
+    @Resource
+    private CacheClient cacheClient;
+
     public Result<?> queryById(Long id) {
+        // 调用工具类的预防缓存穿透的数据获取方法
+//        Shop shop = cacheClient.getWithPassThrough(CACHE_SHOP_KEY_PREFIX, id, Shop.class, shopDB::get,
+//                CACHE_SHOP_TTL, TimeUnit.MINUTES);
+
+        // 调用工具类的预防缓存击穿的逻辑过期数据获取方法
+        Shop shop = cacheClient.getWithLogicalExpire(CACHE_SHOP_KEY_PREFIX, id, Shop.class, shopDB::get,
+                30L, TimeUnit.SECONDS);
+
+        if (shop == null) {
+            return Result.failure("对应的数据不存在");
+        }
+
+        return Result.success("返回成功", shop);
+
 //        return queryWithMutex(id);
 
         // 使用逻辑过期需要提前将热点数据手动导入缓存
-        return queryWithLogicalExpire(id);
+//        return queryWithLogicalExpire(id);
     }
 
     private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
