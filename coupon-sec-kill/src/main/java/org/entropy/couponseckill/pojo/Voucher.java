@@ -21,8 +21,8 @@ public class Voucher  {
     private String rules;
     private Long payValue;
     private Long actualValue;
-    private Long type;
-    private Long status;
+    private Integer type;
+    private Integer status;
 
     @TableField(exist = false)
     private Integer stock;
