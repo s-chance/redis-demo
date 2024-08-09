@@ -46,6 +46,7 @@ public class VoucherOrderService extends ServiceImpl<VoucherOrderMapper, Voucher
         boolean res = secKillVoucherService.update()
                 .setSql("stock = stock - 1")
                 .eq("voucher_id", voucherId)
+                .gt("stock", 0)
                 .update();
         if (!res) {
             // 扣减失败
