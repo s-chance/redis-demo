@@ -6,6 +6,7 @@ import org.entropy.couponseckill.pojo.Result;
 import org.entropy.couponseckill.pojo.SecKillVoucher;
 import org.entropy.couponseckill.pojo.VoucherOrder;
 import org.entropy.couponseckill.utils.RedisIdGenerator;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,6 @@ public class VoucherOrderService extends ServiceImpl<VoucherOrderMapper, Voucher
         this.redisIdGenerator = redisIdGenerator;
     }
 
-    @Transactional
     public Result<?> secKillVoucher(Long voucherId) {
         // 1.查询优惠券
         SecKillVoucher voucher = secKillVoucherService.getById(voucherId);
@@ -42,6 +42,25 @@ public class VoucherOrderService extends ServiceImpl<VoucherOrderMapper, Voucher
             return Result.failure("库存不足");
         }
 
+        Long userId = 1L;
+        synchronized (userId.toString().intern()) {
+            VoucherOrderService proxy = (VoucherOrderService) (AopContext.currentProxy());
+            return proxy.createVoucherOrder(voucherId);
+        }
+    }
+
+    @Transactional
+    public Result<?> createVoucherOrder(Long voucherId) {
+        // 一人一单
+        Long userId = 1L;
+        // 查询订单
+        Long count = query().eq("user_id", userId).eq("voucher_id", voucherId).count();
+        // 判断是否重复购买
+        if (count > 0) {
+            // 用户已经购买过了
+            return Result.failure("不可重复购买");
+        }
+
         // 4.扣减库存
         boolean res = secKillVoucherService.update()
                 .setSql("stock = stock - 1")
@@ -58,7 +77,7 @@ public class VoucherOrderService extends ServiceImpl<VoucherOrderMapper, Voucher
         long orderId = redisIdGenerator.nextId("order");
         voucherOrder.setId(orderId);
         // 5.2.用户id
-        voucherOrder.setUserId(1L);
+        voucherOrder.setUserId(userId);
 
         // 5.3.代金券id
         voucherOrder.setVoucherId(voucherId);
