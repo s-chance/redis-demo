@@ -6,7 +6,9 @@ import org.entropy.couponseckill.pojo.Result;
 import org.entropy.couponseckill.pojo.SecKillVoucher;
 import org.entropy.couponseckill.pojo.VoucherOrder;
 import org.entropy.couponseckill.utils.RedisIdGenerator;
+import org.entropy.couponseckill.utils.SimpleRedisLock;
 import org.springframework.aop.framework.AopContext;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +19,12 @@ public class VoucherOrderService extends ServiceImpl<VoucherOrderMapper, Voucher
 
     private final SecKillVoucherService secKillVoucherService;
     private final RedisIdGenerator redisIdGenerator;
+    private final StringRedisTemplate stringRedisTemplate;
 
-    public VoucherOrderService(SecKillVoucherService secKillVoucherService, RedisIdGenerator redisIdGenerator) {
+    public VoucherOrderService(SecKillVoucherService secKillVoucherService, RedisIdGenerator redisIdGenerator, StringRedisTemplate stringRedisTemplate) {
         this.secKillVoucherService = secKillVoucherService;
         this.redisIdGenerator = redisIdGenerator;
+        this.stringRedisTemplate = stringRedisTemplate;
     }
 
     public Result<?> secKillVoucher(Long voucherId) {
@@ -43,10 +47,31 @@ public class VoucherOrderService extends ServiceImpl<VoucherOrderMapper, Voucher
         }
 
         Long userId = 1L;
-        synchronized (userId.toString().intern()) {
+        // 创建分布式锁对象
+        SimpleRedisLock lock = new SimpleRedisLock("voucher-order:" + userId, stringRedisTemplate);
+        // 获取锁
+        boolean isLocked = lock.lock(5);
+        // 判断是否获取成功
+        if (!isLocked) {
+            // 获取失败，重试或返回报错
+            return Result.failure("不可重复购买");
+
+        }
+
+        try {
+            // 获取增强的代理对象
             VoucherOrderService proxy = (VoucherOrderService) (AopContext.currentProxy());
             return proxy.createVoucherOrder(voucherId);
+        } catch (IllegalStateException e) {
+            throw new RuntimeException(e);
+        } finally {
+            lock.unlock();
         }
+
+//        synchronized (userId.toString().intern()) {
+//            VoucherOrderService proxy = (VoucherOrderService) (AopContext.currentProxy());
+//            return proxy.createVoucherOrder(voucherId);
+//        }
     }
 
     @Transactional
