@@ -7,6 +7,8 @@ import org.entropy.couponseckill.pojo.SecKillVoucher;
 import org.entropy.couponseckill.pojo.VoucherOrder;
 import org.entropy.couponseckill.utils.RedisIdGenerator;
 import org.entropy.couponseckill.utils.SimpleRedisLock;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -20,11 +22,13 @@ public class VoucherOrderService extends ServiceImpl<VoucherOrderMapper, Voucher
     private final SecKillVoucherService secKillVoucherService;
     private final RedisIdGenerator redisIdGenerator;
     private final StringRedisTemplate stringRedisTemplate;
+    private final RedissonClient redissonClient;
 
-    public VoucherOrderService(SecKillVoucherService secKillVoucherService, RedisIdGenerator redisIdGenerator, StringRedisTemplate stringRedisTemplate) {
+    public VoucherOrderService(SecKillVoucherService secKillVoucherService, RedisIdGenerator redisIdGenerator, StringRedisTemplate stringRedisTemplate, RedissonClient redissonClient) {
         this.secKillVoucherService = secKillVoucherService;
         this.redisIdGenerator = redisIdGenerator;
         this.stringRedisTemplate = stringRedisTemplate;
+        this.redissonClient = redissonClient;
     }
 
     public Result<?> secKillVoucher(Long voucherId) {
@@ -48,9 +52,11 @@ public class VoucherOrderService extends ServiceImpl<VoucherOrderMapper, Voucher
 
         Long userId = 1L;
         // 创建分布式锁对象
-        SimpleRedisLock lock = new SimpleRedisLock("voucher-order:" + userId, stringRedisTemplate);
+//        SimpleRedisLock lock = new SimpleRedisLock("voucher-order:" + userId, stringRedisTemplate);
+        RLock lock = redissonClient.getLock("lock:voucher-order:" + userId);
         // 获取锁
-        boolean isLocked = lock.lock(5);
+//        boolean isLocked = lock.lock(5);
+        boolean isLocked = lock.tryLock();
         // 判断是否获取成功
         if (!isLocked) {
             // 获取失败，重试或返回报错
