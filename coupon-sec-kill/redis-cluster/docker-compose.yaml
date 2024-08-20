@@ -1,0 +1,90 @@
+version: "3.9"
+
+services:
+  redis1:
+    container_name: redis-1
+    image: redis:7.4
+    network_mode: host
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command:
+      - "redis-server"
+      - "/usr/local/etc/redis/redis.conf"
+      - "--port"
+      - "${PORT1}"
+
+
+  redis2:
+    container_name: redis-2
+    image: redis:7.4
+    network_mode: host
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command:
+      - "redis-server"
+      - "/usr/local/etc/redis/redis.conf"
+      - "--port"
+      - "${PORT2}"
+
+  redis3:
+    container_name: redis-3
+    image: redis:7.4
+    network_mode: host
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command:
+      - "redis-server"
+      - "/usr/local/etc/redis/redis.conf"
+      - "--port"
+      - "${PORT3}"
+
+  redis4:
+    container_name: redis-4
+    image: redis:7.4
+    network_mode: host
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command:
+      - "redis-server"
+      - "/usr/local/etc/redis/redis.conf"
+      - "--port"
+      - "${PORT4}"
+
+  redis5:
+    container_name: redis-5
+    image: redis:7.4
+    network_mode: host
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command:
+      - "redis-server"
+      - "/usr/local/etc/redis/redis.conf"
+      - "--port"
+      - "${PORT5}"
+
+  redis6:
+    container_name: redis-6
+    image: redis:7.4
+    network_mode: host
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command:
+      - "redis-server"
+      - "/usr/local/etc/redis/redis.conf"
+      - "--port"
+      - "${PORT6}"
+
+  cluster-setup:
+    container_name: cluster-setup
+    image: redis:7.4
+    network_mode: host
+    entrypoint: [ "sh", "-c" ]
+    command:
+      - "echo 'yes' | redis-cli --cluster create $NODE --cluster-replicas 1"
+    depends_on:
+      - redis1
+      - redis2
+      - redis3
+      - redis4
+      - redis5
+      - redis6
