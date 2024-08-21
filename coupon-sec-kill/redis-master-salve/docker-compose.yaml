@@ -1,0 +1,96 @@
+version: "3.9"
+
+services:
+  redis-master-1:
+    container_name: redis-master-1
+    image: redis:7.4
+    network_mode: host
+    command:
+      - "redis-server"
+      - "--port"
+      - "${MASTER_PORT_1}"
+
+
+  redis-master-2:
+    container_name: redis-master-2
+    image: redis:7.4
+    network_mode: host
+    command:
+      - "redis-server"
+      - "--port"
+      - "${MASTER_PORT_2}"
+
+  redis-master-3:
+    container_name: redis-master-3
+    image: redis:7.4
+    network_mode: host
+    command:
+      - "redis-server"
+      - "--port"
+      - "${MASTER_PORT_3}"
+
+  redis-slave-1:
+    container_name: redis-slave-1
+    image: redis:7.4
+    network_mode: host
+    command:
+      - "redis-server"
+      - "--port"
+      - "${SLAVE_PORT_1}"
+      - "--slaveof 127.0.0.1 ${MASTER_PORT_1}"
+
+  redis-slave-2:
+    container_name: redis-slave-2
+    image: redis:7.4
+    network_mode: host
+    command:
+      - "redis-server"
+      - "--port"
+      - "${SLAVE_PORT_2}"
+      - "--slaveof 127.0.0.1 ${MASTER_PORT_2}"
+
+  redis-slave-3:
+    container_name: redis-slave-3
+    image: redis:7.4
+    network_mode: host
+    command:
+      - "redis-server"
+      - "--port"
+      - "${SLAVE_PORT_3}"
+      - "--slaveof 127.0.0.1 ${MASTER_PORT_3}"
+
+  redis-sentinel-1:
+    container_name: redis-sentinel-1
+    image: redis:7.4
+    network_mode: host
+    volumes:
+      - ./sentinel.conf:/usr/local/etc/redis/sentinel.conf
+    command:
+      - "redis-sentinel"
+      - "/usr/local/etc/redis/sentinel.conf"
+      - "--port"
+      - "${SENTINEL_PORT_1}"
+
+  redis-sentinel-2:
+    container_name: redis-sentinel-2
+    image: redis:7.4
+    network_mode: host
+    volumes:
+      - ./sentinel.conf:/usr/local/etc/redis/sentinel.conf
+    command:
+      - "redis-sentinel"
+      - "/usr/local/etc/redis/sentinel.conf"
+      - "--port"
+      - "${SENTINEL_PORT_2}"
+
+  redis-sentinel-3:
+    container_name: redis-sentinel-3
+    image: redis:7.4
+    network_mode: host
+    volumes:
+      - ./sentinel.conf:/usr/local/etc/redis/sentinel.conf
+    command:
+      - "redis-sentinel"
+      - "/usr/local/etc/redis/sentinel.conf"
+      - "--port"
+      - "${SENTINEL_PORT_3}"
