@@ -18,4 +18,28 @@ public class RedisConfig {
                 .setPassword("123");
         return Redisson.create(config);
     }
+
+    @Bean
+    public RedissonClient redissonClient1() {
+        Config config = new Config();
+        config.useSingleServer()
+                .setAddress("redis://localhost:6381");
+        return Redisson.create(config);
+    }
+
+    @Bean
+    public RedissonClient redissonClient2() {
+        Config config = new Config();
+        config.useSingleServer()
+                .setAddress("redis://localhost:6382");
+        return Redisson.create(config);
+    }
+
+    @Bean
+    public RedissonClient redissonClient3() {
+        Config config = new Config();
+        config.useSingleServer()
+                .setAddress("redis://localhost:6383");
+        return Redisson.create(config);
+    }
 }
