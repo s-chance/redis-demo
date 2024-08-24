@@ -3,6 +3,7 @@ package org.entropy.couponseckill.config;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -20,6 +21,7 @@ public class RedisConfig {
     }
 
     @Bean
+    @ConditionalOnProperty("redis.multi-lock")
     public RedissonClient redissonClient1() {
         Config config = new Config();
         config.useSingleServer()
@@ -28,6 +30,7 @@ public class RedisConfig {
     }
 
     @Bean
+    @ConditionalOnProperty("redis.multi-lock")
     public RedissonClient redissonClient2() {
         Config config = new Config();
         config.useSingleServer()
@@ -36,6 +39,7 @@ public class RedisConfig {
     }
 
     @Bean
+    @ConditionalOnProperty("redis.multi-lock")
     public RedissonClient redissonClient3() {
         Config config = new Config();
         config.useSingleServer()
