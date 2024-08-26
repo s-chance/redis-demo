@@ -1,0 +1,39 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/db?useSSL=false&serverTimezone=UTC&useUnicode=true&characterEncoding=utf8
+    username: admin
+    password: 12345
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password: 123
+      lettuce:
+        pool:
+          max-active: 8 # 最大连接
+          max-idle: 8 # 最大空闲连接
+          min-idle: 0 # 最小空闲连接
+          max-wait: 100ms # 连接等待时间
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+
+logging:
+  level:
+    org.entropy.blogcomment: debug
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+
+# access-key和secret-key需自行登录minio控制台生成，以下为示例
+minio:
+  endpoint: http://127.0.0.1:9000
+  access-key: RotCAdJ3O9eciYguRK1D
+  secret-key: Qf335ofDPqUDqQZvjuXAPheH3xGEwZdbAEG4SOJW
+  bucket-name: image
