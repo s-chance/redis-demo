@@ -17,6 +17,7 @@
         <option value="$PROJECT_DIR$/merchant-query-caching/pom.xml" />
         <option value="$PROJECT_DIR$/coupon-seckill/pom.xml" />
         <option value="$PROJECT_DIR$/coupon-sec-kill/pom.xml" />
+        <option value="$PROJECT_DIR$/blog-comment/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">
