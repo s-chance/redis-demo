@@ -27,3 +27,5 @@ CREATE TABLE `tb_user`
 
 INSERT INTO `tb_user` (name, nickname, avatar)
 VALUES ('12345678912', 'tom', 'http://127.0.0.1:9000/image/2024-08-27/9c69723401b6445bb91a187f0d9e5e54-zw7p7.gif');
+INSERT INTO `tb_user` (name, nickname, avatar)
+VALUES ('12345678913', 'jerry', 'http://127.0.0.1:9000/image/2024-08-27/9c69723401b6445bb91a187f0d9e5e54-zw7p7.gif');

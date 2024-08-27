@@ -30,6 +30,7 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: auto
+  type-aliases-package: org.entropy.blogcomment.pojo
 
 # access-key和secret-key需自行登录minio控制台生成，以下为示例
 minio:
