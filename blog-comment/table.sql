@@ -29,3 +29,13 @@ INSERT INTO `tb_user` (name, nickname, avatar)
 VALUES ('12345678912', 'tom', 'http://127.0.0.1:9000/image/2024-08-27/9c69723401b6445bb91a187f0d9e5e54-zw7p7.gif');
 INSERT INTO `tb_user` (name, nickname, avatar)
 VALUES ('12345678913', 'jerry', 'http://127.0.0.1:9000/image/2024-08-27/9c69723401b6445bb91a187f0d9e5e54-zw7p7.gif');
+
+CREATE TABLE `tb_follow`
+(
+    `id`             BIGINT(20) AUTO_INCREMENT NOT NULL COMMENT '主键',
+    `user_id`        BIGINT(20) UNSIGNED       NOT NULL COMMENT '用户id',
+    `follow_user_id` BIGINT(20) UNSIGNED       NOT NULL COMMENT '关注的用户id',
+    `create_time`    TIMESTAMP                 NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4;
