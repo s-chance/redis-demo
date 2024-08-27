@@ -1,5 +1,6 @@
 package org.entropy.blogcomment.pojo;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
@@ -27,6 +28,16 @@ public class Blog {
      * 用户id
      */
     private Long userId;
+    /**
+     * 用户头像
+     */
+    @TableField(exist = false)
+    private String avatar;
+    /**
+     * 用户名称
+     */
+    @TableField(exist = false)
+    private String name;
     /**
      * 标题
      */

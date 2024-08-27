@@ -14,3 +14,16 @@ CREATE TABLE `tb_blog`
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 9
   DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE `tb_user`
+(
+    `id`       BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `name`     VARCHAR(20)         NOT NULL COMMENT '名称',
+    `nickname` VARCHAR(20)         NOT NULL COMMENT '昵称',
+    `avatar`   VARCHAR(255)        NOT NULL COMMENT '头像',
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4;
+
+INSERT INTO `tb_user` (name, nickname, avatar)
+VALUES ('12345678912', 'tom', 'http://127.0.0.1:9000/image/2024-08-27/9c69723401b6445bb91a187f0d9e5e54-zw7p7.gif');
