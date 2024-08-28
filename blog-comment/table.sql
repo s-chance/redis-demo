@@ -29,6 +29,8 @@ INSERT INTO `tb_user` (name, nickname, avatar)
 VALUES ('12345678912', 'tom', 'http://127.0.0.1:9000/image/2024-08-27/9c69723401b6445bb91a187f0d9e5e54-zw7p7.gif');
 INSERT INTO `tb_user` (name, nickname, avatar)
 VALUES ('12345678913', 'jerry', 'http://127.0.0.1:9000/image/2024-08-27/9c69723401b6445bb91a187f0d9e5e54-zw7p7.gif');
+INSERT INTO `tb_user` (name, nickname, avatar)
+VALUES ('12345678914', 'spark', 'http://127.0.0.1:9000/image/2024-08-27/9c69723401b6445bb91a187f0d9e5e54-zw7p7.gif');
 
 CREATE TABLE `tb_follow`
 (
@@ -39,3 +41,8 @@ CREATE TABLE `tb_follow`
     PRIMARY KEY (`id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4;
+
+INSERT INTO `tb_follow` (user_id, follow_user_id)
+VALUES (1, 2),
+       (1, 3),
+       (2, 3);
