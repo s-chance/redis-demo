@@ -34,4 +34,12 @@ public class BlogController {
     public Result<?> queryLikesById(@PathVariable("id") Long id) {
         return blogService.queryLikesById(id);
     }
+
+    @GetMapping("/follow")
+    public Result<?> queryBlogByFollow(
+            @RequestParam("lastId") Long max,
+            @RequestParam(value = "offset", defaultValue = "0") Integer offset
+    ) {
+        return blogService.queryBlogByFollow(max, offset);
+    }
 }

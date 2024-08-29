@@ -2,6 +2,7 @@ package org.entropy.blogcomment.service;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.entropy.blogcomment.dto.ScrollDTO;
 import org.entropy.blogcomment.dto.UserDTO;
 import org.entropy.blogcomment.mapper.BlogMapper;
 import org.entropy.blogcomment.pojo.Blog;
@@ -9,8 +10,10 @@ import org.entropy.blogcomment.pojo.Follow;
 import org.entropy.blogcomment.pojo.Result;
 import org.entropy.blogcomment.pojo.User;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -20,11 +23,13 @@ public class BlogService extends ServiceImpl<BlogMapper, Blog> {
     private final UserService userService;
     private final StringRedisTemplate stringRedisTemplate;
     private final FollowService followService;
+    private final BlogMapper blogMapper;
 
-    public BlogService(UserService userService, StringRedisTemplate stringRedisTemplate, FollowService followService) {
+    public BlogService(UserService userService, StringRedisTemplate stringRedisTemplate, FollowService followService, BlogMapper blogMapper) {
         this.userService = userService;
         this.stringRedisTemplate = stringRedisTemplate;
         this.followService = followService;
+        this.blogMapper = blogMapper;
     }
 
     public Result<?> saveBlog(Blog blog) {
@@ -58,12 +63,13 @@ public class BlogService extends ServiceImpl<BlogMapper, Blog> {
         blog.setAvatar(user.getAvatar());
 
         // 查询blog是否被当前用户点赞
-        isBlogLiked(blog, userId);
+        isBlogLiked(blog);
         return Result.success("查询成功", blog);
     }
 
-    private void isBlogLiked(Blog blog, Long userId) {
-        // 判断当前用户是否已经点赞
+    private void isBlogLiked(Blog blog) {
+        // 判断当前用户是否已经点赞，假设当前用户id为1
+        Long userId = 1L;
         String key = "blog:liked:" + blog.getId();
         Double score = stringRedisTemplate.opsForZSet().score(key, userId.toString());
         blog.setIsLike(score != null);
@@ -111,5 +117,54 @@ public class BlogService extends ServiceImpl<BlogMapper, Blog> {
                 .map(user -> BeanUtil.copyProperties(user, UserDTO.class))
                 .toList();
         return Result.success("查询成功", userDTOS);
+    }
+
+    public Result<?> queryBlogByFollow(Long max, Integer offset) {
+        // 获取当前用户，假设用户id为1
+        Long userId = 1L;
+        // 查询收件箱
+        String key = "feed:" + userId;
+        Set<ZSetOperations.TypedTuple<String>> typedTuples = stringRedisTemplate.opsForZSet()
+                .reverseRangeByScoreWithScores(key, 0, max, offset, 3);
+        if (typedTuples == null || typedTuples.isEmpty()) {
+            return Result.success("暂无新内容", Collections.emptyList());
+        }
+        // 解析数据
+        List<Long> ids = new ArrayList<>(typedTuples.size());
+        long minTime = max;
+        int offset1 = offset;
+        for (ZSetOperations.TypedTuple<String> tuple : typedTuples) {
+            if (tuple.getValue() != null && tuple.getScore() != null) {
+                // 获取id
+                ids.add(Long.valueOf(tuple.getValue()));
+                // 获取时间戳
+                long time = tuple.getScore().longValue();
+                if (time == minTime) {
+                    offset1++;
+                } else {
+                    minTime = time;
+                    offset1 = 1;
+                }
+            }
+        }
+        // 根据id查询blog
+        List<Blog> blogs = blogMapper.queryBlogByFollow(ids);
+
+        blogs.forEach(blog -> {
+            User user = userService.getById(blog.getUserId());
+            blog.setName(user.getNickname());
+            blog.setAvatar(user.getAvatar());
+
+            // 查询blog是否被当前用户点赞
+            isBlogLiked(blog);
+        });
+
+        // 封装并返回
+        ScrollDTO scrollDTO = new ScrollDTO();
+        scrollDTO.setList(blogs);
+        scrollDTO.setOffset(offset1);
+        scrollDTO.setMinTime(minTime);
+
+        return Result.success("查询成功", scrollDTO);
     }
 }
