@@ -16,11 +16,8 @@ public class BlogController {
     }
 
     @PostMapping
-    public Result<Long> saveBlog(@RequestBody Blog blog) {
-        long userId = 1L;
-        blog.setUserId(userId);
-        blogService.save(blog);
-        return Result.success("笔记发布成功", blog.getId());
+    public Result<?> saveBlog(@RequestBody Blog blog) {
+        return blogService.saveBlog(blog);
     }
 
     @GetMapping("/{id}")

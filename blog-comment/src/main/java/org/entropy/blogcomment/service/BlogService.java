@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.entropy.blogcomment.dto.UserDTO;
 import org.entropy.blogcomment.mapper.BlogMapper;
 import org.entropy.blogcomment.pojo.Blog;
+import org.entropy.blogcomment.pojo.Follow;
 import org.entropy.blogcomment.pojo.Result;
 import org.entropy.blogcomment.pojo.User;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -18,10 +19,31 @@ import java.util.Set;
 public class BlogService extends ServiceImpl<BlogMapper, Blog> {
     private final UserService userService;
     private final StringRedisTemplate stringRedisTemplate;
+    private final FollowService followService;
 
-    public BlogService(UserService userService, StringRedisTemplate stringRedisTemplate) {
+    public BlogService(UserService userService, StringRedisTemplate stringRedisTemplate, FollowService followService) {
         this.userService = userService;
         this.stringRedisTemplate = stringRedisTemplate;
+        this.followService = followService;
+    }
+
+    public Result<?> saveBlog(Blog blog) {
+        long userId = 1L;
+        blog.setUserId(userId);
+        boolean result = save(blog);
+        if (!result) {
+            return Result.failure("笔记发布失败");
+        }
+        // 查询所有关注者
+        List<Follow> follows = followService.query().eq("follow_user_id", userId).list();
+        follows.forEach(follow -> {
+            // 获取关注者id
+            Long userId1 = follow.getUserId();
+            // 推送到redis
+            String key = "feed:" + userId1;
+            stringRedisTemplate.opsForZSet().add(key, blog.getId().toString(), System.currentTimeMillis());
+        });
+        return Result.success("笔记发布成功", blog.getId());
     }
 
     public Result<?> queryBlogById(Long id) {
