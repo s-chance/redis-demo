@@ -1,5 +1,6 @@
 package org.entropy.blogcomment.pojo;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
@@ -26,4 +27,6 @@ public class Shop {
     private Integer sold;
     private Integer comments;
     private Byte score;
+    @TableField(exist = false)
+    private Double distance;
 }
